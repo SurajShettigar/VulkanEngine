@@ -12,6 +12,7 @@ target_link_libraries(vulkan INTERFACE ${VULKAN_SDK_LIB_DIR}/vulkan-1.lib)
 add_library(glfw INTERFACE)
 
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glfw)
+set(GLFW_DLL  ${GLFW_DIR}/lib-vc2019/glfw3.dll PARENT_SCOPE)
 
 target_include_directories(glfw INTERFACE ${GLFW_DIR}/include)
 target_link_directories(glfw INTERFACE ${GLFW_DIR}/lib-vc2019)

@@ -7,3 +7,10 @@ project(VulkanEngine VERSION 0.1.0)
 
 add_subdirectory(external)
 add_subdirectory(src)
+
+
+add_custom_target(VULKAN_ENGINE ALL DEPENDS VulkanEngine)
+add_custom_command(TARGET VULKAN_ENGINE POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${GLFW_DLL}
+                    $<TARGET_FILE_DIR:VulkanEngine>)

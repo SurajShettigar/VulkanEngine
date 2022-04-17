@@ -4,7 +4,8 @@
             "name": "Win64",
             "includePath": [
                 "${default}",
-                "${VULKAN_SDK}\\Include"
+                "${VULKAN_SDK}\\Include",
+                "${workspaceFolder}\\external\\glfw\\include"
             ],
             "defines": [
                 "_DEBUG",
