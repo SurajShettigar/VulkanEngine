@@ -7,13 +7,14 @@ namespace engine
 {
     namespace vulkan
     {
-        class VulkanInitializer
-        {
-        private:
-        public:
-            VulkanInitializer() = default;
-            ~VulkanInitializer() = default;
-        };
+        bool createInstance(const InstanceCreateData &data,
+                            vk::Instance &instance,
+                            vk::DebugUtilsMessengerEXT &messenger);
+        bool destroyInstance(vk::Instance &instance, vk::DebugUtilsMessengerEXT &messenger);
+
+        vk::PhysicalDevice selectPhysicalDevice(const vk::Instance &instance);
+        QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice &physicalDevice);
+        vk::Device getLogicalDevice(const vk::PhysicalDevice &physicalDevice);
     }
 }
 

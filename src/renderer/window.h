@@ -55,6 +55,11 @@ namespace engine
             return *this;
         }
 
+        GLFWwindow *const getGLFWWindow() const
+        {
+            return m_current;
+        }
+
         void setWindowCloseListener(std::function<void()> callback);
         void setWindowType(WindowType type);
 

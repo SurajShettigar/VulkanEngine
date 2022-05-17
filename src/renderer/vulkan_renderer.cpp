@@ -13,45 +13,53 @@ vector<const char *> engine::vulkan::VulkanRenderer::getRequiredExtenstions() co
     return reqExtensions;
 }
 
-bool engine::vulkan::VulkanRenderer::hasRequriredExtensions(const vector<const char *> &reqExtensions) const
+bool engine::vulkan::VulkanRenderer::initSurface()
 {
-    // Search if Vulkan has all the required extensions
-    vector<vk::ExtensionProperties> vExtenstions = vk::enumerateInstanceExtensionProperties();
-    // For each required extension, check if it exists in the list of vulkan extensions
-    auto missingExtensions = std::find_if(reqExtensions.begin(),
-                                          reqExtensions.end(),
-                                          [&vExtenstions](const char *reqE)
-                                          {
-                                              return std::find_if(vExtenstions.begin(),
-                                                                  vExtenstions.end(),
-                                                                  [&reqE](const vk::ExtensionProperties &e)
-                                                                  {
-                                                                      return strcmp(reqE, e.extensionName.data());
-                                                                  }) == vExtenstions.end();
-                                          });
+    VkSurfaceKHR surface;
+    VkResult result = glfwCreateWindowSurface(m_instance,
+                                              m_window.getGLFWWindow(),
+                                              nullptr,
+                                              &surface);
+    if (result == VK_SUCCESS)
+    {
+        m_surface = vk::SurfaceKHR(surface);
+        return true;
+    }
 
-    // If missing extensions iterator has reached the end, it found all the
-    // required extensions, otherwise there are some missing extensions
-    return missingExtensions == reqExtensions.end();
+    return false;
+}
+
+bool engine::vulkan::VulkanRenderer::initDevice()
+{
+    m_gpu = selectPhysicalDevice(m_instance);
+    if (m_gpu)
+        m_device = getLogicalDevice(m_gpu);
+
+    return m_gpu && m_device ? true : false;
 }
 
 bool engine::vulkan::VulkanRenderer::initVulkan()
 {
-    vector<const char *> reqExtensions = getRequiredExtenstions();
-    if (!hasRequriredExtensions(reqExtensions))
-    {
-        std::cerr << "Vulkan does not have required extensions" << std::endl;
-        return false;
-    }
-
     vk::ApplicationInfo appInfo(m_appName,
                                 VK_MAKE_VERSION(m_version[0], m_version[1], m_version[2]),
                                 ENGINE_NAME,
                                 VK_MAKE_VERSION(ENINGE_VERSION[0], ENINGE_VERSION[1], ENINGE_VERSION[2]),
                                 VK_API_VERSION_1_2);
-    vk::InstanceCreateInfo createInfo({}, &appInfo, nullptr, reqExtensions);
-    m_instance = vk::createInstance(createInfo);
-    return true;
+
+    InstanceCreateData data{appInfo, m_isValidationLayerEnabled, getRequiredExtenstions(), VALIDATION_LAYERS};
+    bool isInstanceCreated = createInstance(data, m_instance, m_debugMessenger);
+
+    bool isSurfaceCreated = false;
+    if (isInstanceCreated)
+        isSurfaceCreated = initSurface();
+
+    return isInstanceCreated && isSurfaceCreated;
+}
+
+bool engine::vulkan::VulkanRenderer::cleanVulkan()
+{
+    m_instance.destroySurfaceKHR(m_surface);
+    return destroyInstance(m_instance, m_debugMessenger);
 }
 
 bool engine::vulkan::VulkanRenderer::init()
@@ -77,5 +85,12 @@ void engine::vulkan::VulkanRenderer::render()
 
 bool engine::vulkan::VulkanRenderer::clean()
 {
-    return Renderer::clean();
+    bool isCleaned = Renderer::clean();
+
+    if (isCleaned)
+    {
+        isCleaned = cleanVulkan();
+    }
+
+    return isCleaned;
 }

@@ -6,10 +6,6 @@
 // vulkan is included so that GLFW knows to include vulkan functions.
 #include "vulkan_renderer/vulkan_types.h"
 #include "renderer.h"
-#include <vector>
-#include <algorithm>
-
-using std::vector;
 
 namespace engine
 {
@@ -18,24 +14,21 @@ namespace engine
         class VulkanRenderer : public Renderer
         {
         private:
-#if NDEBUG
-            bool m_isValidationLayerEnabled = false;
-#else
             bool m_isValidationLayerEnabled = true;
-#endif
             const char *m_appName;
             const int *m_version;
 
-            VkInstance m_instance;
-            VkDebugUtilsMessengerEXT m_debugMessenger;
-            VkPhysicalDevice m_gpu;
-            VkDevice m_device;
-            VkSurfaceKHR m_surface;
+            vk::Instance m_instance;
+            vk::DebugUtilsMessengerEXT m_debugMessenger;
+            vk::PhysicalDevice m_gpu;
+            vk::Device m_device;
+            vk::SurfaceKHR m_surface;
 
             std::vector<const char *> getRequiredExtenstions() const;
-            bool hasRequriredExtensions(const vector<const char *> &reqExtensions) const;
+            bool initSurface();
+            bool initDevice();
             bool initVulkan();
-
+            bool cleanVulkan();
         protected:
             bool init() override;
             void update() override;
@@ -43,9 +36,9 @@ namespace engine
             bool clean() override;
 
         public:
-            VulkanRenderer(Window &window, const char *appName, const int version[3])
+            VulkanRenderer(Window &window, const char *appName, const int version[3], bool enableValidationLayers = true)
                 : Renderer(window, RendererType::Vulkan),
-                  m_isValidationLayerEnabled{false},
+                  m_isValidationLayerEnabled{enableValidationLayers},
                   m_appName{appName},
                   m_version{version} {}
             ~VulkanRenderer() = default;
