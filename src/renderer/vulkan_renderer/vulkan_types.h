@@ -4,8 +4,10 @@
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <map>
+#include <limits>
 #include <utility>
 
 using std::vector;
@@ -28,10 +30,21 @@ namespace engine
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
             void *pUserData)
         {
-            std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
+            std::cerr << "\033[32m [VALIDATION LAYER] " << pCallbackData->pMessage << std::endl;
             return VK_FALSE;
         }
 
+        /**
+         * @brief Holds the data which is used when creating a Vulkan Instance
+         * 
+         * @param appInfo The Vulkan application info object holding app name, 
+         * version etc.
+         * @param enableValidationLayers Whether to enable validation layers for
+         * debugging. If set to true Vulkan debug messenger object will be initialized
+         * @param requiredExtensions Required instance extensions. (Eg: GLFW/SDL
+         * extensions, VK_EXT_debug_utils etc.)
+         * @param validationLayers the necessary validation layers for debugging
+         */
         struct InstanceCreateData
         {
             vk::ApplicationInfo appInfo;
@@ -42,8 +55,40 @@ namespace engine
 
         struct QueueFamilyIndices
         {
-            uint32_t graphics;
-            uint32_t presentation;
+            uint32_t graphics = std::numeric_limits<unsigned int>::max();
+            uint32_t presentation = std::numeric_limits<unsigned int>::max();
+
+            inline bool isGraphicsSupported() const
+            {
+                return graphics != std::numeric_limits<unsigned int>::max();
+            }
+
+            inline bool isPresentationSupported() const
+            {
+                return presentation != std::numeric_limits<unsigned int>::max();
+            }
+
+            // Set is used so that each value is unique. Graphics and presenstation
+            // queue family can refer to the same thing, so this step is necessary
+            inline std::set<uint32_t> getIndices() const
+            {
+                return std::set<uint32_t>({graphics, presentation});
+            }
+        };
+
+        struct SwapchainInitData
+        {
+            vk::SurfaceFormatKHR surfaceFormat;
+            vk::PresentModeKHR presentMode;
+            vk::Extent2D extent;
+        };
+
+        struct SwapchainData
+        {
+            vk::SwapchainKHR swapchain;
+            vk::Format imageFormat;
+            vector<vk::Image> images;
+            vector<vk::ImageView> imageViews;
         };
 
         static const char *ENGINE_NAME = "Vulkan";

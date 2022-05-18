@@ -16,7 +16,7 @@ vector<const char *> engine::vulkan::VulkanRenderer::getRequiredExtenstions() co
 bool engine::vulkan::VulkanRenderer::initSurface()
 {
     VkSurfaceKHR surface;
-    VkResult result = glfwCreateWindowSurface(m_instance,
+    VkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(m_instance),
                                               m_window.getGLFWWindow(),
                                               nullptr,
                                               &surface);
@@ -31,11 +31,25 @@ bool engine::vulkan::VulkanRenderer::initSurface()
 
 bool engine::vulkan::VulkanRenderer::initDevice()
 {
-    m_gpu = selectPhysicalDevice(m_instance);
+    m_gpu = selectPhysicalDevice(m_instance, m_surface, DEVICE_EXTENSIONS);
     if (m_gpu)
-        m_device = getLogicalDevice(m_gpu);
+    {
+        m_queueFamilyIndices = getQueueFamilyIndices(m_gpu, m_surface);
+        m_device = getLogicalDevice(m_gpu,
+                                    m_queueFamilyIndices,
+                                    m_isValidationLayerEnabled
+                                        ? VALIDATION_LAYERS
+                                        : vector<const char *>{},
+                                    DEVICE_EXTENSIONS);
+        m_graphicsQueue = m_device.getQueue(m_queueFamilyIndices.graphics, 0);
+        m_presentationQueue = m_device.getQueue(m_queueFamilyIndices.presentation, 0);
+    }
 
-    return m_gpu && m_device ? true : false;
+    return m_gpu && m_device && m_graphicsQueue ? true : false;
+}
+
+bool engine::vulkan::VulkanRenderer::initSwapchain()
+{
 }
 
 bool engine::vulkan::VulkanRenderer::initVulkan()
@@ -53,13 +67,23 @@ bool engine::vulkan::VulkanRenderer::initVulkan()
     if (isInstanceCreated)
         isSurfaceCreated = initSurface();
 
+    bool isDeviceInit = false;
+    if (isSurfaceCreated)
+        isDeviceInit = initDevice();
+
     return isInstanceCreated && isSurfaceCreated;
 }
 
 bool engine::vulkan::VulkanRenderer::cleanVulkan()
 {
-    m_instance.destroySurfaceKHR(m_surface);
-    return destroyInstance(m_instance, m_debugMessenger);
+    if (m_device)
+        m_device.destroy();
+    if (m_instance && m_surface)
+        m_instance.destroySurfaceKHR(m_surface);
+    if (m_isValidationLayerEnabled && m_debugMessenger)
+        destroyDebugMessenger(m_instance, m_debugMessenger);
+    m_instance.destroy();
+    return true;
 }
 
 bool engine::vulkan::VulkanRenderer::init()

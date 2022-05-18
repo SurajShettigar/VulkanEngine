@@ -24,9 +24,16 @@ namespace engine
             vk::Device m_device;
             vk::SurfaceKHR m_surface;
 
+            QueueFamilyIndices m_queueFamilyIndices;
+            vk::Queue m_graphicsQueue;
+            vk::Queue m_presentationQueue;
+
+            SwapchainData m_swapchainData;
+
             std::vector<const char *> getRequiredExtenstions() const;
             bool initSurface();
             bool initDevice();
+            bool initSwapchain();
             bool initVulkan();
             bool cleanVulkan();
         protected:
