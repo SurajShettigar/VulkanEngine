@@ -1,12 +1,10 @@
 #include "vulkan_renderer.h"
 #include "vulkan_renderer/vulkan_initializer.h"
 
-vector<const char *> engine::vulkan::VulkanRenderer::getRequiredExtenstions() const
+vector<const char*> engine::vulkan::VulkanRenderer::getRequiredExtenstions() const
 {
     // Required extensions by GLFW
-    uint32_t reqExtensionsCount = 0;
-    const char **exts = glfwGetRequiredInstanceExtensions(&reqExtensionsCount);
-    vector<const char *> reqExtensions(exts, exts + reqExtensionsCount);
+    vector<const char*> reqExtensions = m_window.vkGetRequiredInstanceExtensions();
     if (m_isValidationLayerEnabled)
         reqExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -16,10 +14,9 @@ vector<const char *> engine::vulkan::VulkanRenderer::getRequiredExtenstions() co
 bool engine::vulkan::VulkanRenderer::initSurface()
 {
     VkSurfaceKHR surface;
-    VkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(m_instance),
-                                              m_window.getGLFWWindow(),
-                                              nullptr,
-                                              &surface);
+    VkResult result = m_window.vkGetWindowSurface(static_cast<VkInstance>(m_instance),
+        nullptr,
+        &surface);
     if (result == VK_SUCCESS)
     {
         m_surface = vk::SurfaceKHR(surface);
@@ -36,11 +33,11 @@ bool engine::vulkan::VulkanRenderer::initDevice()
     {
         m_queueFamilyIndices = getQueueFamilyIndices(m_gpu, m_surface);
         m_device = getLogicalDevice(m_gpu,
-                                    m_queueFamilyIndices,
-                                    m_isValidationLayerEnabled
-                                        ? VALIDATION_LAYERS
-                                        : vector<const char *>{},
-                                    DEVICE_EXTENSIONS);
+            m_queueFamilyIndices,
+            m_isValidationLayerEnabled
+            ? VALIDATION_LAYERS
+            : vector<const char*>{},
+            DEVICE_EXTENSIONS);
         m_graphicsQueue = m_device.getQueue(m_queueFamilyIndices.graphics, 0);
         m_presentationQueue = m_device.getQueue(m_queueFamilyIndices.presentation, 0);
     }
@@ -50,17 +47,18 @@ bool engine::vulkan::VulkanRenderer::initDevice()
 
 bool engine::vulkan::VulkanRenderer::initSwapchain()
 {
+    return true;
 }
 
 bool engine::vulkan::VulkanRenderer::initVulkan()
 {
     vk::ApplicationInfo appInfo(m_appName,
-                                VK_MAKE_VERSION(m_version[0], m_version[1], m_version[2]),
-                                ENGINE_NAME,
-                                VK_MAKE_VERSION(ENINGE_VERSION[0], ENINGE_VERSION[1], ENINGE_VERSION[2]),
-                                VK_API_VERSION_1_2);
+        VK_MAKE_VERSION(m_version[0], m_version[1], m_version[2]),
+        ENGINE_NAME,
+        VK_MAKE_VERSION(ENINGE_VERSION[0], ENINGE_VERSION[1], ENINGE_VERSION[2]),
+        VK_API_VERSION_1_2);
 
-    InstanceCreateData data{appInfo, m_isValidationLayerEnabled, getRequiredExtenstions(), VALIDATION_LAYERS};
+    InstanceCreateData data{ appInfo, m_isValidationLayerEnabled, getRequiredExtenstions(), VALIDATION_LAYERS };
     bool isInstanceCreated = createInstance(data, m_instance, m_debugMessenger);
 
     bool isSurfaceCreated = false;

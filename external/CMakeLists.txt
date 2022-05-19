@@ -7,6 +7,7 @@ cmake_path(CONVERT $ENV{VULKAN_SDK}/Lib TO_CMAKE_PATH_LIST VULKAN_SDK_LIB_DIR)
 target_include_directories(vulkan INTERFACE ${VULKAN_SDK_INCLUDE_DIR})
 target_link_directories(vulkan INTERFACE ${VULKAN_SDK_LIB_DIR})    
 target_link_libraries(vulkan INTERFACE ${VULKAN_SDK_LIB_DIR}/vulkan-1.lib)
+target_compile_definitions(vulkan INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 
 # GLFW
 add_library(glfw INTERFACE)

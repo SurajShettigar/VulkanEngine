@@ -27,8 +27,8 @@ namespace engine
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT messageType,
-            const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-            void *pUserData)
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+            void* pUserData)
         {
             std::cerr << "\033[32m [VALIDATION LAYER] " << pCallbackData->pMessage << std::endl;
             return VK_FALSE;
@@ -36,8 +36,8 @@ namespace engine
 
         /**
          * @brief Holds the data which is used when creating a Vulkan Instance
-         * 
-         * @param appInfo The Vulkan application info object holding app name, 
+         *
+         * @param appInfo The Vulkan application info object holding app name,
          * version etc.
          * @param enableValidationLayers Whether to enable validation layers for
          * debugging. If set to true Vulkan debug messenger object will be initialized
@@ -49,8 +49,8 @@ namespace engine
         {
             vk::ApplicationInfo appInfo;
             bool enableValidationLayers;
-            vector<const char *> requiredExtensions;
-            vector<const char *> validationLayers;
+            vector<const char*> requiredExtensions;
+            vector<const char*> validationLayers;
         };
 
         struct QueueFamilyIndices
@@ -72,7 +72,19 @@ namespace engine
             // queue family can refer to the same thing, so this step is necessary
             inline std::set<uint32_t> getIndices() const
             {
-                return std::set<uint32_t>({graphics, presentation});
+                return std::set<uint32_t>({ graphics, presentation });
+            }
+        };
+
+        struct SwapchainSupportInfo
+        {
+            vk::SurfaceCapabilitiesKHR capabilities;
+            vector<vk::SurfaceFormatKHR> surfaceFormats;
+            vector<vk::PresentModeKHR> presentModes;
+
+            inline bool isSupported() const
+            {
+                return !surfaceFormats.empty() && !presentModes.empty();
             }
         };
 
@@ -91,13 +103,13 @@ namespace engine
             vector<vk::ImageView> imageViews;
         };
 
-        static const char *ENGINE_NAME = "Vulkan";
-        static const int ENINGE_VERSION[3] = {1, 0, 0};
+        static const char* ENGINE_NAME = "Vulkan";
+        static const int ENINGE_VERSION[3] = { 1, 0, 0 };
 
-        static const vector<const char *> DEVICE_EXTENSIONS{
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-        static const vector<const char *> VALIDATION_LAYERS = {
-            "VK_LAYER_KHRONOS_validation"};
+        static const vector<const char*> DEVICE_EXTENSIONS{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        static const vector<const char*> VALIDATION_LAYERS = {
+            "VK_LAYER_KHRONOS_validation" };
     }
 }
 

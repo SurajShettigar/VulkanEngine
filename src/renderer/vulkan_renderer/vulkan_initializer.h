@@ -30,6 +30,30 @@ namespace engine
          * @return false if destruction fails
          */
         bool destroyDebugMessenger(vk::Instance &instance, vk::DebugUtilsMessengerEXT &messenger);
+        
+        /**
+         * @brief Gets the Queue Family indices based on the given Vulkan
+         * Physical device and surface
+         *
+         * @param physicalDevice Vulkan Physical device object. (Obtained through
+         * engine::vulkan::selectPhysicalDevice() function call)
+         * @param surface Vulkan surface object
+         * @return QueueFamilyIndices struct with necessary queue family indices.
+         * The indices might not be intialized if it the physical device does not
+         * support the queue families present in QueueFamilyIndices
+         */
+        QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice &physicalDevice,
+                                                 const vk::SurfaceKHR &surface);
+
+        /**
+         * @brief Get the Swapchain details from the selected physical device and surface
+         * 
+         * @param physicalDevice The vulkan Physical Device object
+         * @param surface The Vulkan Surface object
+         * @return SwapchainSupportInfo struct with swapchain related information
+         */
+        SwapchainSupportInfo getSwapchainSupportInfo(const vk::PhysicalDevice &physicalDevice,
+                                                     const vk::SurfaceKHR &surface);
 
         /**
          * @brief Selects an appropriate Vulkan Physical Device (GPU). It filters
@@ -48,20 +72,6 @@ namespace engine
                                                 const vector<const char *> &reqExtensions = {});
 
         /**
-         * @brief Gets the Queue Family indices based on the given Vulkan
-         * Physical device and surface
-         *
-         * @param physicalDevice Vulkan Physical device object. (Obtained through
-         * engine::vulkan::selectPhysicalDevice() function call)
-         * @param surface Vulkan surface object
-         * @return QueueFamilyIndices struct with necessary queue family indices.
-         * The indices might not be intialized if it the physical device does not
-         * support the queue families present in QueueFamilyIndices
-         */
-        QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice &physicalDevice,
-                                                 const vk::SurfaceKHR &surface);
-
-        /**
          * @brief Get the Vulkan logical device object corresponding to the given
          * physical device object.
          *
@@ -77,6 +87,8 @@ namespace engine
                                     const QueueFamilyIndices &queueFamilyIndices,
                                     const vector<const char *> &validationLayers = {},
                                     const vector<const char *> &reqExtensions = {});
+        
+        SwapchainInitData selectSwapchainInitData(const SwapchainSupportInfo& supportInfo);
 
         SwapchainData createSwapchain(const vk::Device &device, const SwapchainInitData &data);
     }

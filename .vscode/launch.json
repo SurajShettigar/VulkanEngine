@@ -22,7 +22,7 @@
                     "value": "Something something"
                 }
             ],
-            "console": "externalTerminal",
+            "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
                 {

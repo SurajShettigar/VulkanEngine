@@ -1,13 +1,50 @@
+#include <vulkan/vulkan.hpp>
 #include "window.h"
 
 void engine::Window::setWindowCloseListener(std::function<void()> callback)
 {
-    m_windowCloseListener = callback;
+    m_onWindowClosed = callback;
 }
 
 void engine::Window::setWindowType(WindowType type)
 {
     m_type = type;
+}
+
+// Utility functions
+std::array<int, 2> engine::Window::getWindowResolution() const
+{
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(m_current, &width, &height);
+    return std::array<int, 2>{width, height};
+}
+
+// Vulkan API related functions
+std::vector<const char*> engine::Window::vkGetRequiredInstanceExtensions() const
+{
+    if (m_type != WindowType::Vulkan)
+    {
+        std::cerr << "Window Error: Cannot call Vulkan functions with current Renderer" << std::endl;
+        return {};
+    }
+
+    uint32_t count = 0;
+    const char** exts = glfwGetRequiredInstanceExtensions(&count);
+    std::vector<const char*> reqExtensions(exts, exts + count);
+    return reqExtensions;
+}
+
+VkResult engine::Window::vkGetWindowSurface(VkInstance instance,
+    const VkAllocationCallbacks* allocator,
+    VkSurfaceKHR* surface) const
+{
+    if (m_type != WindowType::Vulkan)
+    {
+        std::cerr << "Window Error: Cannot call Vulkan functions with current Renderer" << std::endl;
+        return {};
+    }
+
+    return glfwCreateWindowSurface(instance, m_current, allocator, surface);
 }
 
 bool engine::Window::init()
@@ -55,7 +92,7 @@ void engine::Window::update()
 {
     if (glfwWindowShouldClose(m_current))
     {
-        m_windowCloseListener();
+        m_onWindowClosed();
         return;
     }
     glfwPollEvents();
@@ -63,7 +100,7 @@ void engine::Window::update()
 
 bool engine::Window::clean()
 {
-    m_windowCloseListener = nullptr;
+    m_onWindowClosed = nullptr;
     glfwTerminate();
     return true;
 }
