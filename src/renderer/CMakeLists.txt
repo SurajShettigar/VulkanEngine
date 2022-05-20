@@ -1,5 +1,5 @@
 file(GLOB_RECURSE RENDERER_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 add_library(renderer ${RENDERER_SOURCE})
 target_include_directories(renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_renderer)
+target_include_directories(renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan)
 target_link_libraries(renderer vulkan glfw)

@@ -1,7 +1,7 @@
-#ifndef VULKAN_INITIALIZER_H
-#define VULKAN_INITIALIZER_H
+#ifndef VULKAN_FUNCTIONS_H
+#define VULKAN_FUNCTIONS_H
 
-#include "vulkan_types.h"
+#include "vulkan_utils.h"
 
 namespace engine
 {
@@ -17,9 +17,9 @@ namespace engine
          * @return true if initialization is sucessfull
          * @return false if initialization fails
          */
-        bool createInstance(const InstanceCreateData &data,
-                            vk::Instance &instance,
-                            vk::DebugUtilsMessengerEXT &messenger);
+        bool createInstance(const InstanceCreateData& data,
+            vk::Instance& instance,
+            vk::DebugUtilsMessengerEXT& messenger);
 
         /**
          * @brief Destroys the debug messenger. Used for cleanup during application quit
@@ -29,8 +29,8 @@ namespace engine
          * @return true if destruction is successfull
          * @return false if destruction fails
          */
-        bool destroyDebugMessenger(vk::Instance &instance, vk::DebugUtilsMessengerEXT &messenger);
-        
+        bool destroyDebugMessenger(vk::Instance& instance, vk::DebugUtilsMessengerEXT& messenger);
+
         /**
          * @brief Gets the Queue Family indices based on the given Vulkan
          * Physical device and surface
@@ -42,18 +42,18 @@ namespace engine
          * The indices might not be intialized if it the physical device does not
          * support the queue families present in QueueFamilyIndices
          */
-        QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice &physicalDevice,
-                                                 const vk::SurfaceKHR &surface);
+        QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice& physicalDevice,
+            const vk::SurfaceKHR& surface);
 
         /**
          * @brief Get the Swapchain details from the selected physical device and surface
-         * 
+         *
          * @param physicalDevice The vulkan Physical Device object
          * @param surface The Vulkan Surface object
          * @return SwapchainSupportInfo struct with swapchain related information
          */
-        SwapchainSupportInfo getSwapchainSupportInfo(const vk::PhysicalDevice &physicalDevice,
-                                                     const vk::SurfaceKHR &surface);
+        SwapchainSupportInfo getSwapchainSupportInfo(const vk::PhysicalDevice& physicalDevice,
+            const vk::SurfaceKHR& surface);
 
         /**
          * @brief Selects an appropriate Vulkan Physical Device (GPU). It filters
@@ -67,9 +67,9 @@ namespace engine
          * @return vk::PhysicalDevice if a valid GPU is found
          * @return nullptr if no valid GPU exists
          */
-        vk::PhysicalDevice selectPhysicalDevice(const vk::Instance &instance,
-                                                const vk::SurfaceKHR &surface,
-                                                const vector<const char *> &reqExtensions = {});
+        vk::PhysicalDevice selectPhysicalDevice(const vk::Instance& instance,
+            const vk::SurfaceKHR& surface,
+            const vector<const char*>& reqExtensions = {});
 
         /**
          * @brief Get the Vulkan logical device object corresponding to the given
@@ -83,14 +83,23 @@ namespace engine
          * @return vk::Device vulkan logical device object
          * @return nullptr if it fails to create the device
          */
-        vk::Device getLogicalDevice(const vk::PhysicalDevice &physicalDevice,
-                                    const QueueFamilyIndices &queueFamilyIndices,
-                                    const vector<const char *> &validationLayers = {},
-                                    const vector<const char *> &reqExtensions = {});
-        
-        SwapchainInitData selectSwapchainInitData(const SwapchainSupportInfo& supportInfo);
+        vk::Device getLogicalDevice(const vk::PhysicalDevice& physicalDevice,
+            const QueueFamilyIndices& queueFamilyIndices,
+            const vector<const char*>& validationLayers = {},
+            const vector<const char*>& reqExtensions = {});
 
-        SwapchainData createSwapchain(const vk::Device &device, const SwapchainInitData &data);
+        SwapchainInitData selectSwapchainInitData(const SwapchainSupportInfo& supportInfo,
+            const std::array<int, 2> windowResolution);
+
+        SwapchainData createSwapchain(const vk::PhysicalDevice& physicalDevice,
+            const vk::Device& device,
+            const vk::SurfaceKHR& surface,
+            const QueueFamilyIndices& queueFamilyIndices,
+            const std::array<int, 2> windowResolution,
+            const vk::SwapchainKHR& oldSwapchain = nullptr);
+
+        CommandData createCommandData(const vk::Device& device,
+            const QueueFamilyIndices& queueFamilyIndices);
     }
 }
 

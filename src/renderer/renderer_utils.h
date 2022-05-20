@@ -1,5 +1,5 @@
-#ifndef RENDERER_TYPES_H
-#define RENDERER_TYPES_H
+#ifndef RENDERER_UTILS_H
+#define RENDERER_UTILS_H
 
 namespace engine
 {

@@ -14,5 +14,8 @@ int main(int argc, char **argv)
   Window window(APP_NAME);
   VulkanRenderer renderer(window, APP_NAME, VERSION, true);
   renderer.run();
+
+  std::cout << "Press any key to continue..." << std::endl;
+  std::cin.get();
   return 0;
 }

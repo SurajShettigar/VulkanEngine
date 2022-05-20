@@ -1,7 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "renderer_types.h"
+#include "renderer_utils.h"
 #include "window.h"
 
 namespace engine

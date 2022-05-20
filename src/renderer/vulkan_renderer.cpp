@@ -1,5 +1,5 @@
 #include "vulkan_renderer.h"
-#include "vulkan_renderer/vulkan_initializer.h"
+#include "vulkan/vulkan_functions.h"
 
 vector<const char*> engine::vulkan::VulkanRenderer::getRequiredExtenstions() const
 {
@@ -47,7 +47,19 @@ bool engine::vulkan::VulkanRenderer::initDevice()
 
 bool engine::vulkan::VulkanRenderer::initSwapchain()
 {
-    return true;
+    m_swapchainData = createSwapchain(m_gpu,
+        m_device,
+        m_surface,
+        m_queueFamilyIndices,
+        m_window.getWindowResolution());
+
+    return m_swapchainData.swapchain;
+}
+
+bool engine::vulkan::VulkanRenderer::initCommands()
+{
+    m_commandData = createCommandData(m_device, m_queueFamilyIndices);
+    return m_commandData.pool;
 }
 
 bool engine::vulkan::VulkanRenderer::initVulkan()
@@ -69,11 +81,17 @@ bool engine::vulkan::VulkanRenderer::initVulkan()
     if (isSurfaceCreated)
         isDeviceInit = initDevice();
 
-    return isInstanceCreated && isSurfaceCreated;
+    bool isSwapchainInit = false;
+    if (isDeviceInit)
+        isSwapchainInit = initSwapchain();
+
+    return isInstanceCreated && isSurfaceCreated && isDeviceInit && isSwapchainInit;
 }
 
 bool engine::vulkan::VulkanRenderer::cleanVulkan()
 {
+    if (m_device && m_swapchainData.swapchain)
+        m_swapchainData.destroy(m_device);
     if (m_device)
         m_device.destroy();
     if (m_instance && m_surface)

@@ -1,5 +1,5 @@
-#ifndef VULKAN_TYPES_H
-#define VULKAN_TYPES_H
+#ifndef VULKAN_UTILS_H
+#define VULKAN_UTILS_H
 
 #include <vulkan/vulkan.hpp>
 #include <iostream>
@@ -12,14 +12,6 @@
 
 using std::vector;
 
-#define VK_CHECK(result)                                   \
-    VkResult err = result;                                 \
-    if (err)                                               \
-    {                                                      \
-        std::cerr << "Vulkan Error: " << err << std::endl; \
-        abort();                                           \
-    }
-
 namespace engine
 {
     namespace vulkan
@@ -31,6 +23,7 @@ namespace engine
             void* pUserData)
         {
             std::cerr << "\033[32m [VALIDATION LAYER] " << pCallbackData->pMessage << std::endl;
+            std::cerr << "\033[37m";
             return VK_FALSE;
         }
 
@@ -55,17 +48,22 @@ namespace engine
 
         struct QueueFamilyIndices
         {
-            uint32_t graphics = std::numeric_limits<unsigned int>::max();
-            uint32_t presentation = std::numeric_limits<unsigned int>::max();
+            uint32_t graphics = std::numeric_limits<uint32_t>::max();
+            uint32_t presentation = std::numeric_limits<uint32_t>::max();
 
             inline bool isGraphicsSupported() const
             {
-                return graphics != std::numeric_limits<unsigned int>::max();
+                return graphics != std::numeric_limits<uint32_t>::max();
             }
 
             inline bool isPresentationSupported() const
             {
-                return presentation != std::numeric_limits<unsigned int>::max();
+                return presentation != std::numeric_limits<uint32_t>::max();
+            }
+
+            inline bool isGraphicsAndPresentSame() const
+            {
+                return graphics == presentation;
             }
 
             // Set is used so that each value is unique. Graphics and presenstation
@@ -91,6 +89,8 @@ namespace engine
         struct SwapchainInitData
         {
             vk::SurfaceFormatKHR surfaceFormat;
+            uint32_t imageCount;
+            vk::SurfaceTransformFlagBitsKHR transform;
             vk::PresentModeKHR presentMode;
             vk::Extent2D extent;
         };
@@ -99,8 +99,29 @@ namespace engine
         {
             vk::SwapchainKHR swapchain;
             vk::Format imageFormat;
+            vk::Extent2D imageExtent;
             vector<vk::Image> images;
             vector<vk::ImageView> imageViews;
+
+            bool destroy(const vk::Device& device)
+            {
+                if(imageViews.size() > 0)
+                {
+                    for(const vk::ImageView& i: imageViews)
+                        device.destroyImageView(i);
+                    imageViews.clear();
+                    images.clear();
+                }
+                if(swapchain)
+                    device.destroySwapchainKHR(swapchain);
+                return true;
+            }
+        };
+
+        struct CommandData
+        {
+            vk::CommandPool pool;
+            vector<vk::CommandBuffer> buffers;
         };
 
         static const char* ENGINE_NAME = "Vulkan";

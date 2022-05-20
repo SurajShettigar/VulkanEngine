@@ -1,4 +1,5 @@
-#include "vulkan_initializer.h"
+#include "vulkan_functions.h"
+
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #endif
@@ -114,26 +115,8 @@ bool engine::vulkan::createInstance(const InstanceCreateData& data,
     // Create Vulkan Instance
     vk::InstanceCreateInfo createInfo({},
         &data.appInfo,
-        {},
+        data.validationLayers,
         data.requiredExtensions);
-    if (data.enableValidationLayers)
-        createInfo.setPEnabledLayerNames(data.validationLayers);
-
-    auto msgSeverity = /* vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | */
-        /* vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | */
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
-    auto msgTypes = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
-
-    auto debugMessengerCreateInfo = vk::DebugUtilsMessengerCreateInfoEXT({},
-        msgSeverity,
-        msgTypes,
-        engine::vulkan::debugCallback);
-    if (data.enableValidationLayers)
-        createInfo.pNext = static_cast<vk::DebugUtilsMessengerCreateInfoEXT*>(&debugMessengerCreateInfo);
-
     try
     {
         instance = vk::createInstance(createInfo);
@@ -151,6 +134,19 @@ bool engine::vulkan::createInstance(const InstanceCreateData& data,
             }
             else
             {
+                auto msgSeverity = /* vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | */
+                    vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                    vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                    vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
+                auto msgTypes = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                    vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+                    vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+
+                auto debugMessengerCreateInfo = vk::DebugUtilsMessengerCreateInfoEXT({},
+                    msgSeverity,
+                    msgTypes,
+                    &engine::vulkan::debugCallback);
+
                 debugMessenger = instance.createDebugUtilsMessengerEXT(debugMessengerCreateInfo, nullptr);
             }
         }
@@ -328,7 +324,7 @@ vk::Device engine::vulkan::getLogicalDevice(const vk::PhysicalDevice& physicalDe
 
     try
     {
-        vk::Device device = physicalDevice.createDevice(createInfo, nullptr);
+        vk::Device device = physicalDevice.createDevice(createInfo);
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 #endif
@@ -350,9 +346,34 @@ vk::Device engine::vulkan::getLogicalDevice(const vk::PhysicalDevice& physicalDe
     return nullptr;
 }
 
-engine::vulkan::SwapchainInitData engine::vulkan::selectSwapchainInitData(const SwapchainSupportInfo& supportInfo)
+engine::vulkan::SwapchainInitData engine::vulkan::selectSwapchainInitData(const SwapchainSupportInfo& supportInfo,
+    const std::array<int, 2> windowResolution)
 {
     SwapchainInitData initData;
+
+    // Select surface resolution
+    if (supportInfo.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+        initData.extent = supportInfo.capabilities.currentExtent;
+    else
+    {
+        uint32_t width = std::clamp(static_cast<uint32_t>(windowResolution[0]),
+            supportInfo.capabilities.minImageExtent.width,
+            supportInfo.capabilities.maxImageExtent.width);
+        uint32_t height = std::clamp(static_cast<uint32_t>(windowResolution[1]),
+            supportInfo.capabilities.minImageExtent.height,
+            supportInfo.capabilities.maxImageExtent.height);
+        initData.extent.setWidth(width);
+        initData.extent.setHeight(height);
+    }
+
+    // Select image count
+    initData.imageCount = supportInfo.capabilities.minImageCount + 1;
+    if (supportInfo.capabilities.maxImageCount > 0
+        && initData.imageCount > supportInfo.capabilities.maxImageCount)
+        initData.imageCount = supportInfo.capabilities.maxImageCount;
+
+    // Get current surface transform
+    initData.transform = supportInfo.capabilities.currentTransform;
 
     // Select surface format
     auto format = std::find_if(supportInfo.surfaceFormats.begin(),
@@ -378,12 +399,112 @@ engine::vulkan::SwapchainInitData engine::vulkan::selectSwapchainInitData(const 
         initData.presentMode = *presentMode;
     else
         initData.presentMode = vk::PresentModeKHR::eFifo;
-
     return initData;
 }
 
-engine::vulkan::SwapchainData engine::vulkan::createSwapchain(const vk::Device& device,
-    const SwapchainInitData& data)
+engine::vulkan::SwapchainData engine::vulkan::createSwapchain(const vk::PhysicalDevice& physicalDevice,
+    const vk::Device& device,
+    const vk::SurfaceKHR& surface,
+    const QueueFamilyIndices& queueFamilyIndices,
+    const std::array<int, 2> windowResolution,
+    const vk::SwapchainKHR& oldSwapchain)
 {
-    return SwapchainData{};
+    SwapchainSupportInfo supportInfo = getSwapchainSupportInfo(physicalDevice, surface);
+    SwapchainInitData data = selectSwapchainInitData(supportInfo, windowResolution);
+
+    vk::SharingMode sharingMode = queueFamilyIndices.isGraphicsAndPresentSame()
+        ? vk::SharingMode::eExclusive
+        : vk::SharingMode::eConcurrent;
+
+    vk::SwapchainCreateInfoKHR createInfo(vk::SwapchainCreateFlagsKHR(),
+        surface,
+        data.imageCount,
+        data.surfaceFormat.format,
+        data.surfaceFormat.colorSpace,
+        data.extent,
+        1,
+        vk::ImageUsageFlagBits::eColorAttachment,
+        sharingMode,
+        {},
+        data.transform,
+        vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        data.presentMode,
+        true,
+        oldSwapchain);
+
+    if (sharingMode == vk::SharingMode::eConcurrent)
+    {
+        vector<uint32_t> indices = vector<uint32_t>(queueFamilyIndices.getIndices().begin(),
+            queueFamilyIndices.getIndices().end());
+        createInfo.setQueueFamilyIndices(indices);
+    }
+
+    SwapchainData swapchainData;
+    swapchainData.imageFormat = data.surfaceFormat.format;
+    swapchainData.imageExtent = data.extent;
+    try
+    {
+        swapchainData.swapchain = device.createSwapchainKHR(createInfo);
+    }
+    catch (vk::SystemError& err)
+    {
+        std::cerr << "Vulkan Excception: " << err.what() << std::endl;
+    }
+    catch (std::exception& err)
+    {
+        std::cerr << "Exception: " << err.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cerr << "Unknown error when creating vulkan instance";
+    }
+
+    if (swapchainData.swapchain)
+    {
+        swapchainData.images = device.getSwapchainImagesKHR(swapchainData.swapchain);
+
+        swapchainData.imageViews.clear();
+        vk::ComponentMapping cmpMap;
+        vk::ImageSubresourceRange subRR(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+        for (const vk::Image& i : swapchainData.images)
+        {
+            vk::ImageViewCreateInfo createInfo(vk::ImageViewCreateFlags(),
+                i,
+                vk::ImageViewType::e2D,
+                swapchainData.imageFormat,
+                cmpMap,
+                subRR);
+            vk::ImageView imageView = device.createImageView(createInfo);
+            swapchainData.imageViews.push_back(imageView);
+        }
+    }
+
+    return swapchainData;
+}
+
+engine::vulkan::CommandData engine::vulkan::createCommandData(const vk::Device& device,
+    const QueueFamilyIndices& queueFamilyIndices)
+{
+    CommandData data;
+
+    vk::CommandPoolCreateInfo createInfo(vk::CommandPoolCreateFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer),
+        queueFamilyIndices.graphics);
+
+    try {
+        data.pool = device.createCommandPool(createInfo);
+    }
+    catch (vk::SystemError& err)
+    {
+        std::cerr << "Vulkan Excception: " << err.what() << std::endl;
+    }
+    catch (std::exception& err)
+    {
+        std::cerr << "Exception: " << err.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cerr << "Unknown error when creating vulkan instance";
+    }
+
+    return data;
 }

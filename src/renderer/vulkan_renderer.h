@@ -4,7 +4,7 @@
 // Vulkan header should be included before Renderer.
 // This is done to ensure window header (GLFW) is included after
 // vulkan is included so that GLFW knows to include vulkan functions.
-#include "vulkan_renderer/vulkan_types.h"
+#include "vulkan/vulkan_utils.h"
 #include "renderer.h"
 
 namespace engine
@@ -25,15 +25,18 @@ namespace engine
             vk::SurfaceKHR m_surface;
 
             QueueFamilyIndices m_queueFamilyIndices;
-            vk::Queue m_graphicsQueue;
-            vk::Queue m_presentationQueue;
 
             SwapchainData m_swapchainData;
+
+            CommandData m_commandData;
+            vk::Queue m_graphicsQueue;
+            vk::Queue m_presentationQueue;
 
             std::vector<const char *> getRequiredExtenstions() const;
             bool initSurface();
             bool initDevice();
             bool initSwapchain();
+            bool initCommands();
             bool initVulkan();
             bool cleanVulkan();
         protected:
