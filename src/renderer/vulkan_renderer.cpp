@@ -1,5 +1,6 @@
 #include "vulkan_renderer.h"
 #include "vulkan/vulkan_functions.h"
+#include "vulkan/vulkan_graphics.h"
 
 vector<const char*> engine::vulkan::VulkanRenderer::getRequiredExtenstions() const
 {
@@ -59,7 +60,14 @@ bool engine::vulkan::VulkanRenderer::initSwapchain()
 bool engine::vulkan::VulkanRenderer::initCommands()
 {
     m_commandData = createCommandData(m_device, m_queueFamilyIndices);
-    return m_commandData.pool;
+    return m_commandData.pool && m_commandData.buffers.size() > 0;
+}
+
+bool engine::vulkan::VulkanRenderer::initRenderpass()
+{
+    m_renderData = getRenderData(m_device, m_swapchainData);
+
+    return m_renderData.renderPass && m_renderData.framebuffers.size() > 0;
 }
 
 bool engine::vulkan::VulkanRenderer::initVulkan()
@@ -85,15 +93,36 @@ bool engine::vulkan::VulkanRenderer::initVulkan()
     if (isDeviceInit)
         isSwapchainInit = initSwapchain();
 
-    return isInstanceCreated && isSurfaceCreated && isDeviceInit && isSwapchainInit;
+    bool isCommandsInit = false;
+    if (isSwapchainInit)
+        isCommandsInit = initCommands();
+
+    bool isRenderpassInit = false;
+    if (isCommandsInit)
+        isRenderpassInit = initRenderpass();
+
+    return isInstanceCreated
+        && isSurfaceCreated
+        && isDeviceInit
+        && isSwapchainInit
+        && isCommandsInit
+        && isRenderpassInit;
 }
 
 bool engine::vulkan::VulkanRenderer::cleanVulkan()
 {
-    if (m_device && m_swapchainData.swapchain)
-        m_swapchainData.destroy(m_device);
     if (m_device)
+    {
+        if (m_renderData.renderPass)
+            m_renderData.destroy(m_device);
+        if (m_commandData.pool)
+            m_commandData.destroy(m_device);
+        if (m_swapchainData.swapchain)
+            m_swapchainData.destroy(m_device);
+
         m_device.destroy();
+    }
+
     if (m_instance && m_surface)
         m_instance.destroySurfaceKHR(m_surface);
     if (m_isValidationLayerEnabled && m_debugMessenger)

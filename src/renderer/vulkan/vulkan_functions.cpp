@@ -492,6 +492,8 @@ engine::vulkan::CommandData engine::vulkan::createCommandData(const vk::Device& 
 
     try {
         data.pool = device.createCommandPool(createInfo);
+        vk::CommandBufferAllocateInfo allocateInfo(data.pool, vk::CommandBufferLevel::ePrimary, 1);
+        data.buffers = device.allocateCommandBuffers(allocateInfo);
     }
     catch (vk::SystemError& err)
     {

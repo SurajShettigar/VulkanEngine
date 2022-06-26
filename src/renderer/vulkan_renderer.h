@@ -32,11 +32,14 @@ namespace engine
             vk::Queue m_graphicsQueue;
             vk::Queue m_presentationQueue;
 
+            RenderData m_renderData;
+
             std::vector<const char *> getRequiredExtenstions() const;
             bool initSurface();
             bool initDevice();
             bool initSwapchain();
             bool initCommands();
+            bool initRenderpass();
             bool initVulkan();
             bool cleanVulkan();
         protected:

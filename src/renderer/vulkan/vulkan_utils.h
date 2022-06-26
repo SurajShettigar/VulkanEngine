@@ -105,15 +105,15 @@ namespace engine
 
             bool destroy(const vk::Device& device)
             {
-                if(imageViews.size() > 0)
+                if (swapchain)
+                    device.destroySwapchainKHR(swapchain);
+                if (imageViews.size() > 0)
                 {
-                    for(const vk::ImageView& i: imageViews)
+                    for (const vk::ImageView& i : imageViews)
                         device.destroyImageView(i);
                     imageViews.clear();
                     images.clear();
                 }
-                if(swapchain)
-                    device.destroySwapchainKHR(swapchain);
                 return true;
             }
         };
@@ -122,6 +122,38 @@ namespace engine
         {
             vk::CommandPool pool;
             vector<vk::CommandBuffer> buffers;
+
+            bool destroy(const vk::Device& device)
+            {
+                // Freeing command buffers is optional, destorying command pool will free the buffers internally.
+                if (buffers.size() > 0)
+                {
+                    device.freeCommandBuffers(pool, buffers);
+                    buffers.clear();
+                }
+                if (pool)
+                    device.destroyCommandPool(pool);
+                return true;
+            }
+        };
+
+        struct RenderData
+        {
+            vk::RenderPass renderPass;
+            vector<vk::Framebuffer> framebuffers;
+
+            bool destroy(const vk::Device& device)
+            {
+                if (renderPass)
+                    device.destroyRenderPass(renderPass);
+                if (framebuffers.size() > 0)
+                {
+                    for (const vk::Framebuffer& f : framebuffers)
+                        device.destroyFramebuffer(f);
+                    framebuffers.clear();
+                }
+                return true;
+            }
         };
 
         static const char* ENGINE_NAME = "Vulkan";
