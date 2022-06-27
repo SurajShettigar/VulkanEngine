@@ -8,6 +8,7 @@ namespace engine
     namespace vulkan
     {
         RenderData getRenderData(const vk::Device& device, const SwapchainData& swapchainData);
+        RenderSyncData getRenderSyncData(const vk::Device& device);
     }
 }
 #endif

@@ -33,6 +33,7 @@ namespace engine
             vk::Queue m_presentationQueue;
 
             RenderData m_renderData;
+            RenderSyncData m_renderSyncData;
 
             std::vector<const char *> getRequiredExtenstions() const;
             bool initSurface();
@@ -40,6 +41,7 @@ namespace engine
             bool initSwapchain();
             bool initCommands();
             bool initRenderpass();
+            bool initRenderSyncData();
             bool initVulkan();
             bool cleanVulkan();
         protected:

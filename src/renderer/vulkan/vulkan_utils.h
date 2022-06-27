@@ -12,18 +12,72 @@
 
 using std::vector;
 
+#define VK_HANDLE_RESULT(f) \
+    { \
+        vk::Result result = f; \
+        if(result != vk::Result::eSuccess) \
+        { \
+            std::cerr << "\033[31m [VULKAN RESULT] " << result << std::endl; \
+            std::cerr << "\033[0m"; \
+            abort(); \
+        } \
+    } \
+
+
 namespace engine
 {
     namespace vulkan
     {
+        static void handleVulkanException()
+        {
+            try
+            {
+                throw;
+            }
+            catch (vk::SystemError& err)
+            {
+                std::cerr << "\033[31m [VULKAN EXCEPTION] " << err.what() << std::endl;
+                std::cerr << "\033[0m";
+            }
+            catch (std::exception& err)
+            {
+                std::cerr << "\033[31m [EXCEPTION] " << err.what() << std::endl;
+                std::cerr << "\033[0m";
+            }
+            catch (...)
+            {
+                std::cerr << "\033[31m [UNKNOWN EXCEPTION]" << std::endl;
+                std::cerr << "\033[0m";
+            }
+
+        }
+
+
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData)
         {
-            std::cerr << "\033[32m [VALIDATION LAYER] " << pCallbackData->pMessage << std::endl;
-            std::cerr << "\033[37m";
+            switch (messageSeverity)
+            {
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+                std::cerr << "\033[32m [VALIDATION LAYER][VERBOSE] " << pCallbackData->pMessage << std::endl;
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+                std::cerr << "\033[32m [VALIDATION LAYER][INFO] " << pCallbackData->pMessage << std::endl;
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+                std::cerr << "\033[33m [VALIDATION LAYER][WARN] " << pCallbackData->pMessage << std::endl;
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+                std::cerr << "\033[31m [VALIDATION LAYER][ERROR] " << pCallbackData->pMessage << std::endl;
+                break;
+            default:
+                std::cerr << "\033[32m [VALIDATION LAYER] " << pCallbackData->pMessage << std::endl;
+                break;
+            }
+            std::cerr << "\033[0m";
             return VK_FALSE;
         }
 
@@ -152,6 +206,27 @@ namespace engine
                         device.destroyFramebuffer(f);
                     framebuffers.clear();
                 }
+                return true;
+            }
+        };
+
+        struct RenderSyncData
+        {
+            vk::Fence renderFence;
+            vk::Semaphore renderSemaphore;
+            vk::Semaphore presentSemaphore;
+
+            bool destroy(const vk::Device& device)
+            {
+                if (renderFence)
+                {
+                    VK_HANDLE_RESULT(device.waitForFences(renderFence, true, 1000000000));
+                    device.destroyFence(renderFence);
+                }
+                if (renderSemaphore)
+                    device.destroySemaphore(renderSemaphore);
+                if (presentSemaphore)
+                    device.destroySemaphore(presentSemaphore);
                 return true;
             }
         };

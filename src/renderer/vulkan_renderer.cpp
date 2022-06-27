@@ -70,6 +70,15 @@ bool engine::vulkan::VulkanRenderer::initRenderpass()
     return m_renderData.renderPass && m_renderData.framebuffers.size() > 0;
 }
 
+bool engine::vulkan::VulkanRenderer::initRenderSyncData()
+{
+    m_renderSyncData = getRenderSyncData(m_device);
+
+    return m_renderSyncData.renderFence
+        && m_renderSyncData.renderSemaphore
+        && m_renderSyncData.presentSemaphore;
+}
+
 bool engine::vulkan::VulkanRenderer::initVulkan()
 {
     vk::ApplicationInfo appInfo(m_appName,
@@ -101,24 +110,27 @@ bool engine::vulkan::VulkanRenderer::initVulkan()
     if (isCommandsInit)
         isRenderpassInit = initRenderpass();
 
+    bool isRenderSyncInit = false;
+    if (isRenderpassInit)
+        isRenderSyncInit = initRenderSyncData();
+
     return isInstanceCreated
         && isSurfaceCreated
         && isDeviceInit
         && isSwapchainInit
         && isCommandsInit
-        && isRenderpassInit;
+        && isRenderpassInit
+        && isRenderSyncInit;
 }
 
 bool engine::vulkan::VulkanRenderer::cleanVulkan()
 {
     if (m_device)
     {
-        if (m_renderData.renderPass)
-            m_renderData.destroy(m_device);
-        if (m_commandData.pool)
-            m_commandData.destroy(m_device);
-        if (m_swapchainData.swapchain)
-            m_swapchainData.destroy(m_device);
+        m_renderSyncData.destroy(m_device);
+        m_renderData.destroy(m_device);
+        m_commandData.destroy(m_device);
+        m_swapchainData.destroy(m_device);
 
         m_device.destroy();
     }
@@ -150,6 +162,41 @@ void engine::vulkan::VulkanRenderer::update()
 void engine::vulkan::VulkanRenderer::render()
 {
     Renderer::render();
+
+    VK_HANDLE_RESULT(m_device.waitForFences(m_renderSyncData.renderFence, true, 1000000000));
+    m_device.resetFences(m_renderSyncData.renderFence);
+
+    uint32_t imgIndex = m_device.acquireNextImageKHR(m_swapchainData.swapchain, 1000000000, m_renderSyncData.presentSemaphore).value;
+
+    m_commandData.buffers[0].reset();
+    m_commandData.buffers[0].begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+
+    vk::ClearValue clearValue;
+    float flash = abs(sin(m_currentFrameNumber / 120.f));
+    std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    color[2] = flash;
+    clearValue.setColor(vk::ClearColorValue(color));
+
+    m_commandData.buffers[0].beginRenderPass(vk::RenderPassBeginInfo(m_renderData.renderPass,
+        m_renderData.framebuffers[imgIndex],
+        vk::Rect2D({ 0, 0 }, { m_swapchainData.imageExtent }),
+        clearValue), vk::SubpassContents::eInline);
+
+    m_commandData.buffers[0].endRenderPass();
+
+    m_commandData.buffers[0].end();
+
+    vk::PipelineStageFlags pipelineFlags(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    m_graphicsQueue.submit(vk::SubmitInfo(m_renderSyncData.presentSemaphore,
+        pipelineFlags,
+        m_commandData.buffers[0],
+        m_renderSyncData.renderSemaphore), m_renderSyncData.renderFence);
+
+    VK_HANDLE_RESULT(m_presentationQueue.presentKHR(vk::PresentInfoKHR(m_renderSyncData.renderSemaphore,
+        m_swapchainData.swapchain,
+        imgIndex)));
+
+    m_currentFrameNumber++;
 }
 
 bool engine::vulkan::VulkanRenderer::clean()

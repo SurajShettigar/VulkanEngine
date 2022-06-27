@@ -151,19 +151,9 @@ bool engine::vulkan::createInstance(const InstanceCreateData& data,
             }
         }
     }
-    catch (vk::SystemError& err)
-    {
-        std::cout << "Vulkan Excception: " << err.what() << std::endl;
-        return false;
-    }
-    catch (std::exception& err)
-    {
-        std::cout << "Exception: " << err.what() << std::endl;
-        return false;
-    }
     catch (...)
     {
-        std::cerr << "Unknown error when creating vulkan instance";
+        handleVulkanException();
         return false;
     }
 
@@ -187,19 +177,9 @@ bool engine::vulkan::destroyDebugMessenger(vk::Instance& instance,
             {
                 instance.destroyDebugUtilsMessengerEXT(messenger, nullptr);
             }
-            catch (vk::SystemError& err)
-            {
-                std::cout << "Vulkan Excception: " << err.what() << std::endl;
-                return false;
-            }
-            catch (std::exception& err)
-            {
-                std::cout << "Exception: " << err.what() << std::endl;
-                return false;
-            }
             catch (...)
             {
-                std::cerr << "Unknown error when creating vulkan instance";
+                handleVulkanException();
                 return false;
             }
             return true;
@@ -330,17 +310,9 @@ vk::Device engine::vulkan::getLogicalDevice(const vk::PhysicalDevice& physicalDe
 #endif
         return device;
     }
-    catch (vk::SystemError& err)
-    {
-        std::cout << "Vulkan Excception: " << err.what() << std::endl;
-    }
-    catch (std::exception& err)
-    {
-        std::cout << "Exception: " << err.what() << std::endl;
-    }
     catch (...)
     {
-        std::cerr << "Unknown error when creating vulkan instance";
+        handleVulkanException();
     }
 
     return nullptr;
@@ -446,17 +418,9 @@ engine::vulkan::SwapchainData engine::vulkan::createSwapchain(const vk::Physical
     {
         swapchainData.swapchain = device.createSwapchainKHR(createInfo);
     }
-    catch (vk::SystemError& err)
-    {
-        std::cerr << "Vulkan Excception: " << err.what() << std::endl;
-    }
-    catch (std::exception& err)
-    {
-        std::cerr << "Exception: " << err.what() << std::endl;
-    }
     catch (...)
     {
-        std::cerr << "Unknown error when creating vulkan instance";
+        handleVulkanException();
     }
 
     if (swapchainData.swapchain)
@@ -495,17 +459,9 @@ engine::vulkan::CommandData engine::vulkan::createCommandData(const vk::Device& 
         vk::CommandBufferAllocateInfo allocateInfo(data.pool, vk::CommandBufferLevel::ePrimary, 1);
         data.buffers = device.allocateCommandBuffers(allocateInfo);
     }
-    catch (vk::SystemError& err)
-    {
-        std::cerr << "Vulkan Excception: " << err.what() << std::endl;
-    }
-    catch (std::exception& err)
-    {
-        std::cerr << "Exception: " << err.what() << std::endl;
-    }
     catch (...)
     {
-        std::cerr << "Unknown error when creating vulkan instance";
+        handleVulkanException();
     }
 
     return data;

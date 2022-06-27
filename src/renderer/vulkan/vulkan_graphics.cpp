@@ -51,18 +51,28 @@ engine::vulkan::RenderData engine::vulkan::getRenderData(const vk::Device& devic
         }
 
     }
-    catch (vk::SystemError& err)
-    {
-        std::cout << "Vulkan Excception: " << err.what() << std::endl;
-    }
-    catch (std::exception& err)
-    {
-        std::cout << "Exception: " << err.what() << std::endl;
-    }
     catch (...)
     {
-        std::cerr << "Unknown error when creating vulkan instance";
+        handleVulkanException();
     }
 
     return data;
+}
+
+engine::vulkan::RenderSyncData engine::vulkan::getRenderSyncData(const vk::Device& device)
+{
+    RenderSyncData data;
+    try
+    {
+        data.renderFence = device.createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled));
+        data.renderSemaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+        data.presentSemaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+
+    }
+    catch (...)
+    {
+        handleVulkanException();
+    }
+    return data;
+
 }
